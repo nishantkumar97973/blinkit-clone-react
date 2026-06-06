@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 
+import { Link } from "react-router-dom";
 
 import heroImage from "./assets/hero.png";
 
@@ -25,7 +26,7 @@ const [imageFile, setImageFile] =
   useState(null);
 
   useEffect(() => {
- fetch("http://localhost:5000/products")
+ fetch("https://blinkit-clone-react-1.onrender.com/products")
   .then((response) => response.json())
   .then((data) => {
     setProducts(data);
@@ -130,7 +131,7 @@ const [imageFile, setImageFile] =
 
   const token = localStorage.getItem("token");
   const response = await fetch(
-      "http://localhost:5000/products",
+      "https://blinkit-clone-react-1.onrender.com/products",
       {
         method: "POST",
         headers:{
@@ -151,7 +152,7 @@ const [imageFile, setImageFile] =
     setImageFile(null);
 
     // products refresh
-    fetch("http://localhost:5000/products")
+    fetch("https://blinkit-clone-react-1.onrender.com/products")
       .then((response) => response.json())
       .then((data) => {
         setProducts(data);
@@ -169,7 +170,7 @@ const deleteProduct = async (id) => {
   try {
     const token = localStorage.getItem("token");
     const response = await fetch(
-      `http://localhost:5000/products/${id}`,
+      `https://blinkit-clone-react-1.onrender.com/products/${id}`,
       {
         method: "DELETE",
         headers:{
@@ -215,7 +216,7 @@ const handleUpdateProduct = async () => {
     }
 
     const response = await fetch(
-      `http://localhost:5000/products/${editId}`,
+      `https://blinkit-clone-react-1.onrender.com/products/${editId}`,
       {
         method: "PUT",
         headers: {
@@ -246,7 +247,7 @@ const handleUpdateProduct = async () => {
 const handleAdminLogin = async () => {
   try {
     const response = await fetch(
-      "http://localhost:5000/admin/login",
+      "https://blinkit-clone-react-1.onrender.com/admin/login",
       {
         method: "POST",
         headers: {
@@ -285,6 +286,8 @@ const handleAdminLogin = async () => {
         search={search}
         setSearch={setSearch}
       />
+
+     
 {isAdmin && (
 <div className="admin-stats">
   <div className="stat-card">
@@ -305,8 +308,8 @@ const handleAdminLogin = async () => {
 </div>
 )}
 
-      <div className="admin-login">
-  {!isAdmin ? (
+//       <div className="admin-login">
+//   {!isAdmin ? (
     <>
       <input
         type="password"
