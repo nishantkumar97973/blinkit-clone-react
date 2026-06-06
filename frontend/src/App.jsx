@@ -1,10 +1,9 @@
 import { useState, useEffect } from "react";
 
-import milkImage from "./assets/amul milk.png";
-import breadImage from "./assets/bread.png";
-import butterImage from "./assets/b utter.png";
-import cheeseImage from "./assets/cheese.png";
+
 import heroImage from "./assets/hero.png";
+
+
 
 import Navbar from "./components/Navbar";
 import ProductCard from "./components/ProductCard";
@@ -22,31 +21,15 @@ const [editId, setEditId] = useState(null);
 const [isAdmin, setIsAdmin] = useState(false);
 const [password, setPassword] = useState("");
 
+const [imageFile, setImageFile] =
+  useState(null);
+
   useEffect(() => {
-    fetch("http://localhost:5000/products")
-      .then((response) => response.json())
-      .then((data) => {
-        const productsWithImages = data.map((product) => {
-          let image;
-
-          if (product.name === "Amul Milk") {
-            image = milkImage;
-          } else if (product.name === "Bread") {
-            image = breadImage;
-          } else if (product.name === "Butter") {
-            image = butterImage;
-          } else if (product.name === "Cheese") {
-            image = cheeseImage;
-          }
-
-          return {
-            ...product,
-            image,
-          };
-        });
-
-        setProducts(productsWithImages);
-      });
+ fetch("http://localhost:5000/products")
+  .then((response) => response.json())
+  .then((data) => {
+    setProducts(data);
+  });
   }, []);
 
 
@@ -138,20 +121,25 @@ const [password, setPassword] = useState("");
   }
 
   try {
-    const response = await fetch(
+    const formData = new FormData();
+      formData.append("name", newName);
+    formData.append("price", newPrice);
+    formData.append("category", newCategory);
+    formData.append("image", imageFile);
+
+
+  const token = localStorage.getItem("token");
+  const response = await fetch(
       "http://localhost:5000/products",
       {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+        headers:{
+          Authorization: token,
         },
-        body: JSON.stringify({
-          name: newName,
-          price: Number(newPrice),
-          category: newCategory,
-        }),
+        body: formData,
       }
     );
+    
 
     const data = await response.json();
 
@@ -160,6 +148,7 @@ const [password, setPassword] = useState("");
     setNewName("");
     setNewPrice("");
     setNewCategory("");
+    setImageFile(null);
 
     // products refresh
     fetch("http://localhost:5000/products")
@@ -178,10 +167,14 @@ const [password, setPassword] = useState("");
 
 const deleteProduct = async (id) => {
   try {
+    const token = localStorage.getItem("token");
     const response = await fetch(
       `http://localhost:5000/products/${id}`,
       {
         method: "DELETE",
+        headers:{
+          Authorization: token,
+        },
       }
     );
 
@@ -209,18 +202,26 @@ const startEdit = (product) => {
 
 const handleUpdateProduct = async () => {
   try {
+    const token = localStorage.getItem("token");
+
+    const formData = new FormData();
+
+    formData.append("name", newName);
+    formData.append("price", newPrice);
+    formData.append("category", newCategory);
+
+    if (imageFile) {
+      formData.append("image", imageFile);
+    }
+
     const response = await fetch(
       `http://localhost:5000/products/${editId}`,
       {
         method: "PUT",
         headers: {
-          "Content-Type": "application/json",
+          Authorization: token,
         },
-        body: JSON.stringify({
-          name: newName,
-          price: Number(newPrice),
-          category: newCategory,
-        }),
+        body: formData,
       }
     );
 
@@ -232,20 +233,47 @@ const handleUpdateProduct = async () => {
     setNewName("");
     setNewPrice("");
     setNewCategory("");
+    setImageFile(null);
 
     window.location.reload();
 
   } catch (error) {
     console.log(error);
+    alert("Error updating product");
   }
 };
 
-const handleAdminLogin = () => {
-  if (password === "admin123") {
-    setIsAdmin(true);
-    alert("Admin Login Successful");
-  } else {
-    alert("Wrong Password");
+const handleAdminLogin = async () => {
+  try {
+    const response = await fetch(
+      "http://localhost:5000/admin/login",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username: "nishant",
+          password: password,
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    if (data.success) {
+      localStorage.setItem(
+        "token",
+        data.token
+      );
+      setIsAdmin(true);
+      alert("Login Successful");
+    } else {
+      alert("Invalid Credentials");
+    }
+  } catch (error) {
+    console.log(error);
+    alert("Server Error");
   }
 };
 
@@ -257,6 +285,25 @@ const handleAdminLogin = () => {
         search={search}
         setSearch={setSearch}
       />
+{isAdmin && (
+<div className="admin-stats">
+  <div className="stat-card">
+    <h3>{products.length}</h3>
+    <p>Total Products</p>
+  </div>
+
+
+  <div className="stat-card">
+    <h3>₹{
+      products.reduce(
+        (sum, p) => sum + Number(p.price),
+        0
+      )
+    }</h3>
+    <p>Inventory Value</p>
+  </div>
+</div>
+)}
 
       <div className="admin-login">
   {!isAdmin ? (
@@ -274,10 +321,26 @@ const handleAdminLogin = () => {
         Admin Login
       </button>
     </>
-  ) : (
-    <h3>Admin Mode Active 🔐</h3>
+ ) : (
+    <div className="admin-badge">
+      🔐 Admin Dashboard
+    </div>
   )}
+
+   {isAdmin && (
+  <button
+    onClick={() => {
+      localStorage.removeItem("token");
+      setIsAdmin(false);
+    }}
+    className="logout-btn"
+  >
+    Logout
+  </button>
+)}
+    
 </div>
+
 
       <div className="categories">
         <button
@@ -332,6 +395,13 @@ const handleAdminLogin = () => {
     value={newCategory}
     onChange={(e) => setNewCategory(e.target.value)}
   />
+
+  <input
+  type="file"
+  onChange={(e) =>
+    setImageFile(e.target.files[0])
+  }
+/>
 
 {editId ? (
   <button onClick={handleUpdateProduct}>
