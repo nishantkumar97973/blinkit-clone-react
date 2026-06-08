@@ -89,6 +89,30 @@ app.get("/products", (req, res) => {
     }
   });
 });
+app.get("/products/:id", (req, res) => {
+  const id = req.params.id;
+
+  const query =
+    "SELECT * FROM products WHERE id = ?";
+
+  db.query(query, [id], (err, result) => {
+    if (err) {
+      console.log(err);
+
+      return res.status(500).json({
+        message: "Database Error",
+      });
+    }
+
+    if (result.length === 0) {
+      return res.status(404).json({
+        message: "Product not found",
+      });
+    }
+
+    res.json(result[0]);
+  });
+});
 
 app.post(
   "/products",
@@ -174,6 +198,85 @@ app.put("/products/:id",verifyToken,upload.single("image"), (req, res) => {
     }
   );
 });
+app.post("/signup", (req, res) => {
+  console.log("SIGNUP HIT");
+  const { name, email, password } =
+    req.body;
+
+  const query =
+    "INSERT INTO users (name,email,password) VALUES (?,?,?)";
+
+  db.query(
+    query,
+    [name, email, password],
+    (err, result) => {
+      if (err) {
+        return res.status(500).json({
+          message: "Email already exists",
+        });
+      }
+
+      res.json({
+        success: true,
+        message:
+          "User Registered Successfully",
+      });
+    }
+  );
+});
+
+app.post("/login", (req, res) => {
+  const { email, password } =
+    req.body;
+
+  const query =
+    "SELECT * FROM users WHERE email=?";
+
+  db.query(
+    query,
+    [email],
+    (err, result) => {
+      if (err) {
+        return res.status(500).json({
+          message: "Database Error",
+        });
+      }
+
+      if (result.length === 0) {
+        return res.status(401).json({
+          success: false,
+          message: "User Not Found",
+        });
+      }
+
+      const user = result[0];
+
+      if (user.password !== password) {
+        return res.status(401).json({
+          success: false,
+          message: "Wrong Password",
+        });
+      }
+
+      const token = jwt.sign(
+        {
+          id: user.id,
+          email: user.email,
+        },
+        process.env.JWT_SECRET,
+        {
+          expiresIn: "1d",
+        }
+      );
+
+      res.json({
+        success: true,
+        token,
+        user,
+      });
+    }
+  );
+});
 
 app.post("/admin/login", (req, res) => {
   const { username, password } = req.body;
@@ -205,7 +308,7 @@ app.post("/admin/login", (req, res) => {
   }
 });
 
-
+console.log("SIGNUP ROUTE VERSION LOADED");
 
 app.listen(5000, () => {
   console.log("Server running on port 5000");
